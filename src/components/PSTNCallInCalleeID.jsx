@@ -2,7 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { PSTN_CALL_IN_CALLEEID_FIELDS, PSTN_CALL_IN_CALLEEID_TABLE_COLUMNS, PSTN_CALL_IN_CALLEEID_INITIAL_FORM } from '../constants/PSTNCallInCalleeIDConstants';
 import EditDocumentIcon from '@mui/icons-material/EditDocument';
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select as MuiSelect, MenuItem, FormControl, CircularProgress } from '@mui/material';
-import { listNumberManipulations, createNumberManipulation, updateNumberManipulation, deleteNumberManipulation, listPstnGroups } from '../api/apiService';
+//import { listNumberManipulations, createNumberManipulation, updateNumberManipulation, deleteNumberManipulation, listPstnGroups } from '../api/apiService';
+
+// Stub functions when API imports are commented out
+const listNumberManipulations = async () => ({ response: true, message: [] });
+const createNumberManipulation = async () => ({ response: true, message: 'Created successfully' });
+const updateNumberManipulation = async () => ({ response: true, message: 'Updated successfully' });
+const deleteNumberManipulation = async () => ({ response: true, message: 'Deleted successfully' });
+const listPstnGroups = async () => ({ response: true, message: [] });
 
 const LOCAL_STORAGE_KEY = 'pstnCallInCalleeIdRules';
 
@@ -167,11 +174,10 @@ const PSTNCallInCalleeID = () => {
   const handleCloseModal = () => setIsModalOpen(false);
 
   const handleSave = async () => {
-    // Validation: required fields including With Original CalleeID
-    if (!formData.call_initiator) { alert('Call Initiator is required.'); return; }
+    // Validation: required fields
+    if (!formData.call_initiator) { alert('Source Port Group is required.'); return; }
     if (!formData.callerid_prefix) { alert('CallerID Prefix is required.'); return; }
     if (!formData.calleeid_prefix) { alert('CalleeID Prefix is required.'); return; }
-    if (!formData.with_original_calleeid) { alert('With Original CalleeID is required.'); return; }
 
     // Normalize optional numeric fields to '0' when empty
     const normalized = {
@@ -191,7 +197,7 @@ const PSTNCallInCalleeID = () => {
           call_initiator: normalized.call_initiator,
           callerid_prefix: normalized.callerid_prefix,
           calleeid_prefix: normalized.calleeid_prefix,
-          with_original_calleeid: normalized.with_original_calleeid,
+          with_original_calleeid: normalized.with_original_calleeid || 'No', // Hidden field required by backend
           stripped_digits_from_left: normalized.stripped_digits_from_left,
           stripped_digits_from_right: normalized.stripped_digits_from_right,
           reserved_digits_from_right: normalized.reserved_digits_from_right,
@@ -475,7 +481,7 @@ const PSTNCallInCalleeID = () => {
         </div>
       ) : rules.length === 0 ? (
         <div className="w-full h-full flex flex-col items-center justify-center" style={{ minHeight: '15vh' }}>
-          <div className="text-gray-600 text-xl md:text-[16px] font-semibold mb-4 text-center">No available number manipulation rule (PSTN Call In CalleeID)!</div>
+          <div className="text-gray-600 text-xl md:text-[16px] font-semibold mb-4 text-center">No available number manipulation rule!</div>
           <Button
             variant="contained"
             sx={{

@@ -1823,3 +1823,188 @@ export const restoreBackup = async (file) => {
     throw new Error(message);
   }
 };
+
+// Helper function to manage user IDs in localStorage
+export const getUserIds = () => {
+  try {
+    const stored = localStorage.getItem('userManageIds');
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.error('Error reading user IDs from localStorage:', error);
+    return [];
+  }
+};
+
+export const saveUserId = (userId) => {
+  try {
+    const ids = getUserIds();
+    if (!ids.includes(userId)) {
+      ids.push(userId);
+      localStorage.setItem('userManageIds', JSON.stringify(ids));
+    }
+  } catch (error) {
+    console.error('Error saving user ID to localStorage:', error);
+  }
+};
+
+export const removeUserId = (userId) => {
+  try {
+    const ids = getUserIds();
+    const filtered = ids.filter(id => id !== userId);
+    localStorage.setItem('userManageIds', JSON.stringify(filtered));
+  } catch (error) {
+    console.error('Error removing user ID from localStorage:', error);
+  }
+};
+
+// User Management API Functions
+export const createUser = async (userData) => {
+  try {
+    const response = await axiosInstance.post('/admin/create-user', userData);
+    // If user was created successfully, save the ID to localStorage
+    if (response.data && response.data.response && response.data.data && response.data.data.id) {
+      saveUserId(response.data.data.id);
+    }
+    return response.data;
+  } catch (error) {
+    console.error('Error creating user:', error);
+    const message = error.response?.data?.message || error.message || 'Failed to create user';
+    throw new Error(message);
+  }
+};
+
+export const getUser = async (userId) => {
+  try {
+    const response = await axiosInstance.get(`/admin/get-user/${userId}`);
+    console.log(`getUser(${userId}) response:`, response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    const message = error.response?.data?.message || error.message || 'Failed to fetch user';
+    throw new Error(message);
+  }
+};
+
+export const updateUser = async (userId, userData) => {
+  try {
+    // Backend expects: { userId, username, password, userAuthority, pagePermissions, channelPermissions }
+    const rawId = userId ?? userData?.id ?? userData?.userId;
+    if (!rawId && rawId !== 0) {
+      throw new Error('User ID is required for update');
+    }
+
+    const numericId =
+      typeof rawId === 'string' ? parseInt(rawId, 10) : Number(rawId);
+
+    if (isNaN(numericId) || numericId <= 0) {
+      throw new Error(`Invalid user ID: ${rawId}`);
+    }
+
+    const payload = {
+      userId: numericId,
+      username: userData.username,
+      password: userData.password,
+      userAuthority:
+        userData.userAuthority ??
+        userData.permission ??
+        userData.role ??
+        'read-only',
+      pagePermissions: userData.pagePermissions || {},
+      channelPermissions: userData.channelPermissions || {},
+    };
+
+    console.log(
+      'updateUser final payload:',
+      JSON.stringify(payload, null, 2),
+    );
+
+    const response = await axiosInstance.post('/admin/update-user', payload);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating user:', error);
+    console.error('Error response:', error.response?.data);
+    const message =
+      error.response?.data?.message ||
+      error.message ||
+      'Failed to update user';
+    throw new Error(message);
+  }
+};
+
+export const listUsers = async () => {
+  try {
+    // Use /admin/get-all-users endpoint which returns users with permissions
+    console.log('Fetching all users from /admin/get-all-users...');
+    const response = await axiosInstance.get('/admin/get-all-users');
+    
+    console.log('Full API response:', response.data);
+    
+    if (response.data && response.data.response !== false) {
+      // Handle different response structures
+      let usersData = null;
+      
+      if (response.data.data) {
+        usersData = response.data.data;
+      } else if (Array.isArray(response.data)) {
+        usersData = response.data;
+      }
+      
+      if (!usersData) {
+        console.log('No users data in response');
+        return { response: true, data: [] };
+      }
+      
+      console.log('Received users data:', usersData);
+      
+      // Transform API data to match expected format
+      // The API returns users with pagePermissions and channelPermissions already included
+      const users = Array.isArray(usersData) ? usersData.map(user => {
+        // Handle different response structures
+        if (user.user) {
+          // If user data is nested under 'user' property (like get-user response)
+          return {
+            ...user.user,
+            pagePermissions: user.pagePermissions || {},
+            channelPermissions: user.channelPermissions || {}
+          };
+        } else {
+          // If user data is already flat with permissions
+          return {
+            id: user.id,
+            username: user.username,
+            permission: user.permission,
+            pagePermissions: user.pagePermissions || {},
+            channelPermissions: user.channelPermissions || {},
+            created_at: user.created_at
+          };
+        }
+      }) : [];
+      
+      console.log('Transformed users:', users);
+      return { response: true, data: users };
+    }
+    
+    console.log('API returned response: false');
+    return { response: true, data: [] };
+  } catch (error) {
+    console.error('Error listing users:', error);
+    console.error('Error response:', error.response?.data);
+    // Return empty array on error
+    return { response: true, data: [] };
+  }
+};
+
+export const deleteUser = async (userId) => {
+  try {
+    const response = await axiosInstance.post('/admin/delete-user', { id: userId });
+    // If user was deleted successfully, remove the ID from localStorage
+    if (response.data && response.data.response) {
+      removeUserId(userId);
+    }
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    const message = error.response?.data?.message || error.message || 'Failed to delete user';
+    throw new Error(message);
+  }
+};

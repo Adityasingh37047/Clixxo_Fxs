@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DDOS_FIELDS, DDOS_INITIAL_FORM, DDOS_INFO_LOG } from '../constants/DDOSSettingsConstants';
 import { Button, TextField, Select, MenuItem, Alert } from '@mui/material';
-import { postLinuxCmd } from '../api/apiService';
+//import { postLinuxCmd } from '../api/apiService';
 
 const blueButtonSx = {
   background: 'linear-gradient(to bottom, #3bb6f5 0%, #0e8fd6 100%)',

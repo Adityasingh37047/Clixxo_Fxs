@@ -6,48 +6,67 @@ import MenuIcon from '@mui/icons-material/Menu';
 import { IconButton } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-// import { postLinuxCmd } from '../api/apiService';
-
+import { postLinuxCmd } from '../api/apiService';
 
 const Navbar = ({ isMobile, sidebarOpen, setSidebarOpen }) => {
   const [dateTime, setDateTime] = useState(new Date());
   const [serverDateTime, setServerDateTime] = useState(null);
   const [useServerTime, setUseServerTime] = useState(true);
+  const [timeZoneLabel, setTimeZoneLabel] = useState('');
   const navigate = useNavigate();
   const { logout, user } = useAuth();
 
-  // Fetch server time on component mount
-  // useEffect(() => {
-    // const fetchServerTime = async () => {
-    //   try {
-    //     // Get current system date and time from server
-    //     // const response = await postLinuxCmd({ cmd: 'date "+%Y-%m-%d %H:%M:%S"' });
+  // Fetch server time and timezone on component mount
+  useEffect(() => {
+    const fetchServerTime = async () => {
+      try {
+        // Get current system date and time from server
+        const response = await postLinuxCmd({ cmd: 'date "+%Y-%m-%d %H:%M:%S"' });
         
-    //     if (response.response && response.responseData) {
-    //       const serverTimeStr = response.responseData.trim();
-    //       const serverDate = new Date(serverTimeStr);
+        if (response.response && response.responseData) {
+          const serverTimeStr = response.responseData.trim();
+          const serverDate = new Date(serverTimeStr);
           
-    //       if (!isNaN(serverDate.getTime())) {
-    //         setServerDateTime(serverDate);
-    //         console.log('📡 Server time fetched:', serverTimeStr);
-    //       } else {
-    //         console.warn('⚠️ Invalid server time, using browser time');
-    //         setUseServerTime(false);
-    //       }
-    //     }
-    //   } catch (error) {
-    //     console.warn('⚠️ Could not fetch server time, using browser time:', error);
-    //     setUseServerTime(false);
-    //   }
-    // };
+          if (!isNaN(serverDate.getTime())) {
+            setServerDateTime(serverDate);
+            console.log('📡 Server time fetched:', serverTimeStr);
+          } else {
+            console.warn('⚠️ Invalid server time, using browser time');
+            setUseServerTime(false);
+          }
+        }
+
+        // Also fetch timezone information – match device's timedatectl output
+        try {
+          // Example line: "               Time zone: Asia/Kolkata (IST, +0530)"
+          const tzResp = await postLinuxCmd({ cmd: "timedatectl | grep 'Time zone:'" });
+          if (tzResp.response && tzResp.responseData) {
+            const raw = tzResp.responseData.trim();
+            const firstLine = raw.split('\n')[0] || '';
+            const marker = 'Time zone:';
+            const idx = firstLine.indexOf(marker);
+            if (idx !== -1) {
+              const tzText = firstLine.slice(idx + marker.length).trim();
+              // tzText will be e.g. "Asia/Kolkata (IST, +0530)"
+              setTimeZoneLabel(tzText);
+            }
+          }
+        } catch (tzError) {
+          console.warn('⚠️ Could not fetch timezone info:', tzError);
+        }
+      } catch (error) {
+        console.warn('⚠️ Could not fetch server time, using browser time:', error);
+        setUseServerTime(false);
+      }
+    };
     
-    // fetchServerTime();
+    fetchServerTime();
     
     // Refetch server time every 30 seconds to stay in sync
-  //   const refetchInterval = setInterval(fetchServerTime, 30000);
+    const refetchInterval = setInterval(fetchServerTime, 30000);
     
-  //   return () => clearInterval(refetchInterval);
-  // }, []);
+    return () => clearInterval(refetchInterval);
+  }, []);
 
   // Update displayed time every second
   useEffect(() => {
@@ -136,6 +155,12 @@ const Navbar = ({ isMobile, sidebarOpen, setSidebarOpen }) => {
             <>
               <div>{formattedDate}</div>
               <div>{formattedTime}</div>
+            {timeZoneLabel && (
+              <div>
+                Time Zone:{' '}
+                <span className="font-medium">{timeZoneLabel}</span>
+              </div>
+            )}
             </>
           ) : (
             <div className="text-gray-400">Loading time...</div>

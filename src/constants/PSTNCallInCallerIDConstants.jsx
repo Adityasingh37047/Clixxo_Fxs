@@ -17,13 +17,9 @@ export const PSTN_CALL_IN_CALLERID_TABLE_COLUMNS = [
 
 // Form fields for the modal (per screenshot)
 export const PSTN_CALL_IN_CALLERID_FIELDS = [
-  { name: 'call_initiator', label: 'Call Initiator:', type: 'select', options: [] },
+  { name: 'call_initiator', label: 'Source Port Group:', type: 'select', options: [] },
   { name: 'callerid_prefix', label: 'CallerID Prefix:', type: 'text' },
   { name: 'calleeid_prefix', label: 'CalleeID Prefix:', type: 'text' },
-  { name: 'with_original_calleeid', label: 'With Original CalleeID:', type: 'select', options: [
-    { value: 'Yes', label: 'Yes' },
-    { value: 'No', label: 'No' },
-  ] },
   { name: 'stripped_digits_from_left', label: 'Stripped Digits from Left:', type: 'number' },
   { name: 'stripped_digits_from_right', label: 'Stripped Digits from Right:', type: 'number' },
   { name: 'reserved_digits_from_right', label: 'Reserved Digits from Right:', type: 'number' },
@@ -37,7 +33,7 @@ export const PSTN_CALL_IN_CALLERID_INITIAL_FORM = {
   call_initiator: '',
   callerid_prefix: '*',
   calleeid_prefix: '*',
-  with_original_calleeid: 'No',
+  with_original_calleeid: 'No', // Hidden field required by backend
   stripped_digits_from_left: '0',
   stripped_digits_from_right: '0',
   reserved_digits_from_right: '20',

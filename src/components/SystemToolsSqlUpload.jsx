@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, CircularProgress } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { uploadSqlPatch } from '../api/apiService';
+//import { uploadSqlPatch } from '../api/apiService';
 
 const SystemToolsSqlUpload = () => {
   const [file, setFile] = useState(null);

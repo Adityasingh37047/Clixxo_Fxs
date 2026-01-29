@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { IP_ROUTING_TABLE_COLUMNS, IP_ROUTING_TABLE_MODAL_FIELDS, IP_ROUTING_TABLE_INITIAL_ROW } from '../constants/IPRoutingTableConstants';
 import EditDocumentIcon from '@mui/icons-material/EditDocument';
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem } from '@mui/material';
-import { fetchSystemInfo, postLinuxCmd } from '../api/apiService';
+//import { fetchSystemInfo, postLinuxCmd } from '../api/apiService';
 
 const MIN_ROWS = 10;
 

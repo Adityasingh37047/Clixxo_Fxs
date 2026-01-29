@@ -1,5 +1,5 @@
 import React,{use, useEffect, useState}from "react";
-// import {fetchSystemInfo, postLinuxCmd} from "../api/apiService"
+import {fetchSystemInfo, postLinuxCmd} from "../api/apiService"
 import { Paper, Button, CircularProgress } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {

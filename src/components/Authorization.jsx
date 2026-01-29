@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button, TextField, CircularProgress, Alert } from '@mui/material';
 import { DEFAULT_SERIAL, DEFAULT_STATUS } from '../constants/AuthorizationConstants';
-import { postLinuxCmd } from '../api/apiService';
+//import { postLinuxCmd } from '../api/apiService';
 
 const blueBarStyle = {
   width: '100%',

@@ -36,6 +36,7 @@ export const ROUTE_PATHS = {
   PORT: '/port',
   PORT_FXS: '/port/fxs',
   PORT_FXS_ADVANCED: '/port/fxs-advanced',
+  PORT_FXS_BATCH_MODIFY: '/port/fxs/batch-modify',
   PORT_GROUP: '/port/port-group',
   ROUTE: '/route',
 

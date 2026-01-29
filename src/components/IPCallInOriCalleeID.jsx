@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { IP_CALL_IN_ORICALLEEID_FIELDS, IP_CALL_IN_ORICALLEEID_TABLE_COLUMNS, IP_CALL_IN_ORICALLEEID_INITIAL_FORM } from '../constants/IPCallInOriCalleeIDConstants';
 import EditDocumentIcon from '@mui/icons-material/EditDocument';
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select as MuiSelect, MenuItem, FormControl, CircularProgress } from '@mui/material';
-import { listNumberManipulations, createNumberManipulation, updateNumberManipulation, deleteNumberManipulation, listGroups } from '../api/apiService';
+//import { listNumberManipulations, createNumberManipulation, updateNumberManipulation, deleteNumberManipulation, listGroups } from '../api/apiService';
 
 const LOCAL_STORAGE_KEY = 'ipCallInOriCalleeIdRules';
 

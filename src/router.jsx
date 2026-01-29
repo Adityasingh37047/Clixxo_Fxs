@@ -99,8 +99,12 @@ import UserManage from './components/UserManage';
 import PortGroupPage from './components/PortGroupPage';
 import PortFxsAdvancedPage from './components/PortFxsAdvancedPage';
 import PortFxsPage from './components/PortFxsPage';
-
-
+import PortFxsBatchModifyPage from './components/PortFxsBatchModifyPage';
+import ConfigOptimizePage from './components/ConfigOptimize';
+import CallLogPage from './components/CallLog';
+import SystemMonitor from './components/SystemMonitor';
+import TR069Config from './components/TR069Config';
+import DnsTest from './components/DnsTest';
 // Error Boundary Component
 const ErrorBoundary = ({ error }) => {
   return (
@@ -238,7 +242,7 @@ export const router = createBrowserRouter([
           },
           {
             path: ROUTE_PATHS.VPN_SETTINGS,
-            element: <VpnSettingsPage />,
+            element: <SystemToolsVPN />,
           },
           {
             path: ROUTE_PATHS.AREA_SELECT,
@@ -266,6 +270,10 @@ export const router = createBrowserRouter([
       {
         path: ROUTE_PATHS.PORT_FXS_ADVANCED,
         element: <PortFxsAdvancedPage />,
+      },
+      {
+        path: ROUTE_PATHS.PORT_FXS_BATCH_MODIFY,
+        element: <PortFxsBatchModifyPage />,
       },
      
       {
@@ -397,10 +405,6 @@ export const router = createBrowserRouter([
         element: <DDOSSettings />,
       },
       {
-        path: '/system-tools/vpn',
-        element: <SystemToolsVPN />,
-      },
-      {
         path: '/system-tools/certificate-manage',
         element: <CertificateManage />,
       },
@@ -439,6 +443,10 @@ export const router = createBrowserRouter([
       {
         path: '/system-tools/tracert-test',
         element: <TRACERTTest />,
+      },
+      {
+        path: '/system-tools/dns-test',
+        element: <DnsTest />,
       },
       {
         path: '/system-tools/modification-record',
@@ -491,6 +499,22 @@ export const router = createBrowserRouter([
       {
         path: '/system-tools/hosts',
         element: <Hosts />,
+      },
+      {
+        path: '/system-tools/config-optimize',
+        element: <ConfigOptimizePage />,
+      },
+      {
+        path: '/system-tools/call-log',
+        element: <CallLogPage />,
+      },
+      {
+        path: '/system-tools/system-monitor',
+        element: <SystemMonitor />,
+      },
+      {
+        path: '/system-tools/tr069-config',
+        element: <TR069Config />,
       },
     ],
   },

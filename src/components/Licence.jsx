@@ -21,12 +21,12 @@ import {
   Fingerprint as FingerprintIcon,
   FileUpload as FileUploadIcon
 } from '@mui/icons-material';
-import { 
-  getLicenseInfo, 
-  checkLicenseValidity, 
-  getSystemFingerprint, 
-  uploadLicenseFile 
-} from '../api/apiService';
+//import { 
+  //getLicenseInfo, 
+  //checkLicenseValidity, 
+  //getSystemFingerprint, 
+  //uploadLicenseFile 
+//} from '../api/apiService';
 import {
   LICENSE_STATUS,
   LICENSE_STATUS_DISPLAY,

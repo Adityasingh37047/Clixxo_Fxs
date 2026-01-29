@@ -11,10 +11,54 @@ import {
 } from '@mui/material';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import { SIDEBAR_SECTIONS } from '../constants/sidebarConstants';
+import { SIDEBAR_ID_TO_API_KEY } from '../constants/SidebarPermissionMapping';
+import { useAuth } from '../context/AuthContext';
 
 const Sidebar = ({ isMobile, sidebarOpen, setSidebarOpen, navbarHeight = 85 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
+  
+  // Get page permissions from user data
+  const pagePermissions = user?.pagePermissions || {};
+  const isAdmin = !user || Object.keys(pagePermissions).length === 0; // Admin has empty pagePermissions
+  
+  // Check if user has permission for a sidebar item
+  const hasPermission = (itemId) => {
+    if (isAdmin) return true; // Admin sees everything
+    const apiKey = SIDEBAR_ID_TO_API_KEY[itemId];
+    if (!apiKey) return true; // If no mapping, allow by default
+    return pagePermissions[apiKey] === true;
+  };
+  
+  // Filter sections and submenu items based on permissions
+  const filterSidebarSections = (sections) => {
+    return sections
+      .map(section => {
+        if (!section.hasSubmenu) {
+          // If section has no submenu, check if it has permission
+          return hasPermission(section.id) ? section : null;
+        }
+        
+        // Filter submenu items
+        const filteredSubmenuItems = section.submenuItems
+          ? section.submenuItems.filter(item => hasPermission(item.id))
+          : [];
+        
+        // Only show section if it has at least one visible submenu item
+        if (filteredSubmenuItems.length === 0) {
+          return null;
+        }
+        
+        return {
+          ...section,
+          submenuItems: filteredSubmenuItems
+        };
+      })
+      .filter(Boolean);
+  };
+  
+  const filteredSections = filterSidebarSections(SIDEBAR_SECTIONS);
   
   const [openSections, setOpenSections] = useState({
     operationInfo: false,
@@ -209,7 +253,7 @@ const Sidebar = ({ isMobile, sidebarOpen, setSidebarOpen, navbarHeight = 85 }) =
     >
       <div role="presentation" className="h-full">
         <List className="py-0">
-          {SIDEBAR_SECTIONS.map(renderSidebarSection)}
+          {filteredSections.map(renderSidebarSection)}
         </List>
       </div>
     </Drawer>

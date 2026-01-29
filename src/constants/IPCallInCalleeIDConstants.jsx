@@ -17,13 +17,9 @@ export const IP_CALL_IN_CALLEEID_TABLE_COLUMNS = [
 
 // Form fields for the modal
 export const IP_CALL_IN_CALLEEID_FIELDS = [
-  { name: 'call_initiator', label: 'Call Initiator:', type: 'select', options: [] }, // Will be populated dynamically with SIP trunk groups
+  { name: 'call_initiator', label: 'Call Initiator:', type: 'text' },
   { name: 'callerid_prefix', label: 'CallerID Prefix:', type: 'text' },
   { name: 'calleeid_prefix', label: 'CalleeID Prefix:', type: 'text' },
-  { name: 'with_original_calleeid', label: 'With Original CalleeID:', type: 'select', options: [
-    { value: 'Yes', label: 'Yes' },
-    { value: 'No', label: 'No' }
-  ] },
   { name: 'stripped_digits_from_left', label: 'Stripped Digits from Left:', type: 'number' },
   { name: 'stripped_digits_from_right', label: 'Stripped Digits from Right:', type: 'number' },
   { name: 'reserved_digits_from_right', label: 'Reserved Digits from Right:', type: 'number' },
@@ -34,10 +30,10 @@ export const IP_CALL_IN_CALLEEID_FIELDS = [
 
 // Initial form state for the modal
 export const IP_CALL_IN_CALLEEID_INITIAL_FORM = {
-  call_initiator: '', // Will be set dynamically to first SIP trunk group
+  call_initiator: '*',
   callerid_prefix: '*',
   calleeid_prefix: '*',
-  with_original_calleeid: 'No', // Default to "No"
+  with_original_calleeid: 'No', // Hidden field required by backend
   stripped_digits_from_left: '0',
   stripped_digits_from_right: '0',
   reserved_digits_from_right: '20',

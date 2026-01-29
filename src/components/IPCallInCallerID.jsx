@@ -2,7 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { IP_CALL_IN_CALLERID_FIELDS, IP_CALL_IN_CALLERID_TABLE_COLUMNS, IP_CALL_IN_CALLERID_INITIAL_FORM } from '../constants/IPCallInCallerIDConstants';
 import EditDocumentIcon from '@mui/icons-material/EditDocument';
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select as MuiSelect, MenuItem, FormControl, CircularProgress } from '@mui/material';
-import { listNumberManipulations, createNumberManipulation, updateNumberManipulation, deleteNumberManipulation, listGroups } from '../api/apiService';
+//import { listNumberManipulations, createNumberManipulation, updateNumberManipulation, deleteNumberManipulation, listGroups } from '../api/apiService';
+
+// Stub functions when API imports are commented out
+const listNumberManipulations = async () => ({ response: true, message: [] });
+const createNumberManipulation = async () => ({ response: true, message: 'Created successfully' });
+const updateNumberManipulation = async () => ({ response: true, message: 'Updated successfully' });
+const deleteNumberManipulation = async () => ({ response: true, message: 'Deleted successfully' });
+const listGroups = async () => ({ response: true, message: [] });
 
 const modalOverlayStyle = {
   position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -98,7 +105,6 @@ const IPCallInCallerID = () => {
   const itemsPerPage = 20;
   const totalPages = Math.max(1, Math.ceil(rules.length / itemsPerPage));
   const pagedRules = rules.slice((page - 1) * itemsPerPage, page * itemsPerPage);
-  const [sipTrunkGroups, setSipTrunkGroups] = useState([]);
   const [loading, setLoading] = useState({
     fetch: false,
     save: false,
@@ -109,36 +115,6 @@ const IPCallInCallerID = () => {
   const tableScrollRef = useRef(null);
   const [scrollState, setScrollState] = useState({ left: 0, width: 0, scrollWidth: 0 });
   const [showCustomScrollbar, setShowCustomScrollbar] = useState(false);
-
-  // Fetch SIP Trunk Groups for Call Initiator dropdown
-  const fetchSipTrunkGroups = async () => {
-    try {
-      const response = await listGroups();
-      // console.log('SIP Trunk Groups API Response:', response);
-      if (response.response && response.message) {
-        const sipGroups = Array.isArray(response.message) ? response.message : [response.message];
-        // console.log('SIP Groups data:', sipGroups);
-        setSipTrunkGroups(sipGroups);
-        
-        // Set default value for new forms if no groups are loaded yet
-        if (sipGroups.length > 0 && formData.call_initiator === '') {
-          const firstGroupId = sipGroups[0].group_id || sipGroups[0].id || sipGroups[0];
-          setFormData(prev => ({ ...prev, call_initiator: firstGroupId }));
-        }
-      } else {
-        // console.log('No SIP groups data found');
-        setSipTrunkGroups([]);
-      }
-    } catch (error) {
-      console.error('Error fetching SIP trunk groups:', error);
-      if (error.message === 'Network Error') {
-        showMessage('error', 'Network error. Please check your connection.');
-      } else {
-        showMessage('error', error.message || 'Failed to load SIP trunk groups');
-      }
-      setSipTrunkGroups([]);
-    }
-  };
 
   // Fetch Number Manipulations
   const fetchNumberManipulations = async () => {
@@ -181,13 +157,8 @@ const IPCallInCallerID = () => {
       });
       setEditIndex(item.id);
     } else {
-      // Adding new item - set default call_initiator if available
-      const defaultForm = { ...IP_CALL_IN_CALLERID_INITIAL_FORM };
-      if (sipTrunkGroups.length > 0) {
-        const firstGroupId = sipTrunkGroups[0].group_id || sipTrunkGroups[0].id || sipTrunkGroups[0];
-        defaultForm.call_initiator = firstGroupId;
-      }
-      setFormData(defaultForm);
+      // Adding new item
+      setFormData({ ...IP_CALL_IN_CALLERID_INITIAL_FORM });
       setEditIndex(null);
     }
     setIsModalOpen(true);
@@ -206,10 +177,6 @@ const IPCallInCallerID = () => {
     }
     if (!formData.calleeid_prefix) {
       alert('CalleeID Prefix is required.');
-      return;
-    }
-    if (!formData.with_original_calleeid) {
-      alert('With Original CalleeID is required.');
       return;
     }
 
@@ -231,7 +198,7 @@ const IPCallInCallerID = () => {
           call_initiator: normalized.call_initiator,
           callerid_prefix: normalized.callerid_prefix,
           calleeid_prefix: normalized.calleeid_prefix,
-          with_original_calleeid: normalized.with_original_calleeid,
+          with_original_calleeid: normalized.with_original_calleeid || 'No', // Hidden field required by backend
           stripped_digits_from_left: normalized.stripped_digits_from_left,
           stripped_digits_from_right: normalized.stripped_digits_from_right,
           reserved_digits_from_right: normalized.reserved_digits_from_right,
@@ -447,7 +414,6 @@ const IPCallInCallerID = () => {
   // Load data on component mount
   useEffect(() => {
     fetchNumberManipulations();
-    fetchSipTrunkGroups();
   }, []);
 
   // Refresh function
@@ -539,21 +505,6 @@ const IPCallInCallerID = () => {
     },
   };
 
-  // Get updated fields with SIP trunk groups
-  const getUpdatedFields = () => {
-    return IP_CALL_IN_CALLERID_FIELDS.map(field => {
-      if (field.name === 'call_initiator') {
-        return {
-          ...field,
-          options: sipTrunkGroups.map(group => ({
-            value: group.group_id || group.id || group,
-            label: `SIP Trunk Group [${group.group_id || group.id || group}]`
-          }))
-        };
-      }
-      return field;
-    });
-  };
 
   return (
     <div className="bg-gray-50 min-h-[calc(100vh-200px)] flex flex-col items-center box-border" style={{backgroundColor: "#dde0e4"}}>
@@ -564,7 +515,7 @@ const IPCallInCallerID = () => {
         </div>
       ) : rules.length === 0 ? (
         <div className="w-full h-full flex flex-col items-center justify-center" style={{ minHeight: '15vh' }}>
-          <div className="text-gray-600 text-xl md:text-[16px] font-semibold mb-4 text-center">No available number manipulation rule (IP Call In CallerID)!</div>
+          <div className="text-gray-600 text-xl md:text-[16px] font-semibold mb-4 text-center">No available number manipulation rule!</div>
           <Button
             variant="contained"
             sx={{
@@ -616,7 +567,7 @@ const IPCallInCallerID = () => {
                           <tr key={realIdx} style={{ minHeight: 32 }}>
                             <td className="border border-gray-300 text-center bg-white text-[12px]" style={{ border: '1px solid #bbb', padding: '6px 8px', minHeight: 32, whiteSpace: 'nowrap' }}><input type="checkbox" checked={selected.includes(realIdx)} onChange={() => handleSelectRow(idx)} /></td>
                             <td className="border border-gray-300 text-center bg-white text-[12px]" style={{ border: '1px solid #bbb', padding: '6px 8px', minHeight: 32, whiteSpace: 'nowrap' }}>{realIdx + 1}</td>
-                            <td className="border border-gray-300 text-center bg-white text-[12px]" style={{ border: '1px solid #bbb', padding: '6px 8px', minHeight: 32, whiteSpace: 'nowrap' }}>SIP Trunk Group [{item.call_initiator}]</td>
+                            <td className="border border-gray-300 text-center bg-white text-[12px]" style={{ border: '1px solid #bbb', padding: '6px 8px', minHeight: 32, whiteSpace: 'nowrap' }}>{item.call_initiator}</td>
                             <td className="border border-gray-300 text-center bg-white text-[12px]" style={{ border: '1px solid #bbb', padding: '6px 8px', minHeight: 32, whiteSpace: 'nowrap' }}>{item.callerid_prefix}</td>
                             <td className="border border-gray-300 text-center bg-white text-[12px]" style={{ border: '1px solid #bbb', padding: '6px 8px', minHeight: 32, whiteSpace: 'nowrap' }}>{item.calleeid_prefix}</td>
                             <td className="border border-gray-300 text-center bg-white text-[12px]" style={{ border: '1px solid #bbb', padding: '6px 8px', minHeight: 32, whiteSpace: 'nowrap' }}>{item.with_original_calleeid}</td>
@@ -765,7 +716,7 @@ const IPCallInCallerID = () => {
           }}
         >
           <div className="flex flex-col gap-2 w-full">
-            {getUpdatedFields().map((field) => (
+            {IP_CALL_IN_CALLERID_FIELDS.map((field) => (
               <div
                 key={field.name}
                 className="flex items-center bg-white border border-gray-300 rounded px-2 py-1 gap-2"
