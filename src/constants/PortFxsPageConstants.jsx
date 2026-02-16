@@ -51,6 +51,7 @@ export const PORT_FXS_INITIAL_DATA = {
 
 // Batch Modify Form Fields
 export const PORT_FXS_BATCH_MODIFY_FIELDS = [
+  // Reordered and adjusted to match reference HTML layout and behavior
   {
     key: 'startingPort',
     label: 'Starting Port',
@@ -63,7 +64,7 @@ export const PORT_FXS_BATCH_MODIFY_FIELDS = [
     label: 'Ending Port',
     type: 'select',
     options: Array.from({ length: PORT_FXS_TOTAL_PORTS }, (_, i) => String(i + 1)),
-    default: String(PORT_FXS_TOTAL_PORTS),
+    default: '1',
   },
   {
     key: 'batchRegister',
@@ -100,13 +101,6 @@ export const PORT_FXS_BATCH_MODIFY_FIELDS = [
     conditional: 'batchAccount',
   },
   {
-    key: 'displayNamePreferred',
-    label: 'Display Name Preferred',
-    type: 'checkbox',
-    default: false,
-    conditional: 'batchAccount',
-  },
-  {
     key: 'startingAuthPassword',
     label: 'Starting Authentication Password',
     type: 'password',
@@ -116,10 +110,10 @@ export const PORT_FXS_BATCH_MODIFY_FIELDS = [
     conditionalParentValue: 'Yes',
   },
   {
-    key: 'startingAuthUsername',
-    label: 'Starting Authentication Username',
-    type: 'text',
-    default: '',
+    key: 'displayNamePreferred',
+    label: 'Display Name Preferred',
+    type: 'checkbox',
+    default: false,
     conditional: 'batchAccount',
   },
   {
@@ -173,25 +167,10 @@ export const PORT_FXS_BATCH_MODIFY_FIELDS = [
     default: '1',
     validation: 'integer',
     conditional: 'batchAccount',
-    conditionalParent: 'authPasswordBatchRule',
-    conditionalParentValue: ['Increase', 'Decrease'],
+    conditionalParent: 'registerPort',
+    conditionalParentValue: 'Yes',
   },
-  {
-    key: 'authUsernameBatchRule',
-    label: 'Authentication Username Batch Rule',
-    type: 'select',
-    options: ['Increase', 'Decrease'],
-    default: 'Increase',
-    conditional: 'batchAccount',
-  },
-  {
-    key: 'authUsernameBatchStepSize',
-    label: 'Authentication Username Batch Step Size',
-    type: 'text',
-    default: '1',
-    validation: 'integer',
-    conditional: 'batchAccount',
-  },
+  // Removed authentication username & password step/username rules per request
   {
     key: 'batchConfigure',
     label: 'Batch Configure',
@@ -300,22 +279,7 @@ export const PORT_FXS_BATCH_MODIFY_FIELDS = [
     conditionalParent: 'forwardType',
     conditionalParentValue: 'No Reply',
   },
-  {
-    key: 'colorRing',
-    label: 'Color Ring',
-    type: 'checkbox',
-    default: false,
-    conditional: 'batchConfigure',
-  },
-  {
-    key: 'colorRingIndex',
-    label: 'Color Ring Index',
-    type: 'select',
-    options: [], // Will be populated dynamically
-    default: '',
-    conditional: 'batchConfigure',
-    conditionalParent: 'colorRing',
-  },
+  // Color ring removed per request
   {
     key: 'advancedConfiguration',
     label: 'Advanced Configuration',

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-// import { postAsteriskCLI } from '../api/apiService';
+import { postAsteriskCLI } from '../api/apiService';
 
 import {
   ASTERISK_CLI_TITLE,
@@ -10,7 +10,7 @@ import {
 import { Button, Alert } from '@mui/material';
 
 const blueBar = (title) => (
-  <div className="w-full bg-gradient-to-b from-[#b3e0ff] via-[#7ecbfa] to-[#3b8fd6] h-12 rounded-t-lg flex items-center justify-center text-[22px] font-semibold text-gray-800 shadow mb-0 border-b border-[#b3e0ff]">
+  <div className="w-full bg-linear-to-b from-[#b3e0ff] via-[#7ecbfa] to-[#3b8fd6] h-12 rounded-t-lg flex items-center justify-center text-[22px] font-semibold text-gray-800 shadow mb-0 border-b border-[#b3e0ff]">
     {title}
   </div>
 );

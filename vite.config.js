@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => ({
       "/api": {
         // Try HTTPS first (port 443), fallback to HTTP (port 8000) if needed
         // Change this to match your Postman working URL
-        target: "https://192.168.0.71:443", // backend API server
+        target: "https://192.168.0.91:443", // backend API server
         changeOrigin: true,
         secure: false, // Allow self-signed certificates
         timeout: 30000, // 30 second timeout

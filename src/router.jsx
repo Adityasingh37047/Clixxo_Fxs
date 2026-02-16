@@ -100,6 +100,7 @@ import PortGroupPage from './components/PortGroupPage';
 import PortFxsAdvancedPage from './components/PortFxsAdvancedPage';
 import PortFxsPage from './components/PortFxsPage';
 import PortFxsBatchModifyPage from './components/PortFxsBatchModifyPage';
+import PortFxsModifyPage from './components/PortFxsModifyPage';
 import ConfigOptimizePage from './components/ConfigOptimize';
 import CallLogPage from './components/CallLog';
 import SystemMonitor from './components/SystemMonitor';
@@ -274,6 +275,10 @@ export const router = createBrowserRouter([
       {
         path: ROUTE_PATHS.PORT_FXS_BATCH_MODIFY,
         element: <PortFxsBatchModifyPage />,
+      },
+      {
+        path: ROUTE_PATHS.PORT_FXS_MODIFY,
+        element: <PortFxsModifyPage />,
       },
      
       {

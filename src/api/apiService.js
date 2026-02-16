@@ -437,6 +437,50 @@ export const fetchSipAccounts = async () => {
   }
 };
 
+// FXS Ports API
+export const fetchFxsPorts = async () => {
+  try {
+    const response = await axiosInstance.get('/fxs/ports');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching FXS ports:', error.message);
+    throw error.response?.data || { message: 'Server unavailable' };
+  }
+};
+
+export const initializeFxsPorts = async () => {
+  try {
+    const response = await axiosInstance.post('/fxs/initialize');
+    return response.data;
+  } catch (error) {
+    console.error('Error initializing FXS ports:', error.message);
+    throw error.response?.data || { message: 'Server unavailable' };
+  }
+};
+
+export const postBatchModifyFxs = async (data) => {
+  try {
+    const response = await axiosInstance.post('/fxs/batch-modify', data);
+    return response.data;
+  } catch (error) {
+    console.error('Error posting batch modify FXS:', error.message);
+    throw error.response?.data || { message: 'Server unavailable' };
+  }
+};
+/**
+ * Update a single FXS port.
+ * Uses PUT /fxs/update as the backend expects.
+ */
+export const updateFxsPort = async (data) => {
+  try {
+    const response = await axiosInstance.put('/fxs/update', data);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating FXS port:', error.message);
+    throw error.response?.data || { message: 'Server unavailable' };
+  }
+};
+
 // SIP To SIP Account (IP Trunk) API Services - uses 'contact'
 export const fetchSipIpTrunkAccounts = async () => {
   try {

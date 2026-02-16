@@ -7,8 +7,11 @@ import {
   PORT_FXS_INITIAL_DATA,
   PORT_FXS_PAGE_TITLE,
 } from '../constants/PortFxsPageConstants';
+import { fetchFxsPorts, initializeFxsPorts } from '../api/apiService';
 import { ROUTE_PATHS } from '../constants/routeConstatns';
 import EditDocumentIcon from '@mui/icons-material/EditDocument';
+import PortFxsBatchModifyPage from './PortFxsBatchModifyPage';
+import PortFxsModifyPage from './PortFxsModifyPage';
 
 // Styles
 const blueBarStyle = {
@@ -129,8 +132,12 @@ const getInitialBatchForm = () => {
 
 const PortFxsPage = () => {
   const navigate = useNavigate();
-  const [ports, setPorts] = useState(initializePortData());
+  const [ports, setPorts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [batchInitialPorts, setBatchInitialPorts] = useState(null);
   const [page, setPage] = useState(1);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const totalPages = Math.max(1, Math.ceil(ports.length / PORT_FXS_ITEMS_PER_PAGE));
   const pagedPorts = ports.slice(
@@ -138,81 +145,185 @@ const PortFxsPage = () => {
     page * PORT_FXS_ITEMS_PER_PAGE
   );
 
+  // Map API port object to UI row object
+  const mapApiPortToRow = (item) => {
+    return {
+      port: item.port_number ?? item.port ?? item.id,
+      type: item.type ?? 'FXS',
+      sipAccount: item.sip_account || item.starting_authentication_username || '---',
+      displayName: item.display_name || item.starting_display_name || '---',
+      autoDialNum: item.auto_dial_number_value || item.auto_dial || '---',
+      dnd: item.dnd_do_not_disturb ? 'Enable' : 'Disable',
+      forward: item.call_forward ? 'Enable' : 'Disable',
+      fwdType: item.forward_type || '---',
+      fwdNumber: item.forward_number || '---',
+      cid: item.cid_enable ? 'Enable' : 'Disable',
+      callWaiting: item.call_waiting ? 'Enable' : 'Disable',
+      regStatus: item.ing_mode || item.status || '---',
+      echoCanceller: item.echo_canceller ? 'Enable' : 'Disable',
+      colorRing: item.color_ring ? 'Enable' : 'Disable',
+      colorRingIndex: item.color_ring_index ?? item.color_ring_index_status ?? '---',
+      inputGain: item.input_gain ?? item.input_gain_db ?? 0,
+      outputGain: item.output_gain ?? item.output_gain_db ?? 0,
+      raw: item,
+    };
+  };
+
+  // Fetch ports from API, initialize if empty
+  const loadPorts = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetchFxsPorts();
+      const data = res && res.data ? res.data : (res || []);
+        if (!Array.isArray(data) || data.length === 0) {
+        // initialize then refetch
+        await initializeFxsPorts();
+        const retry = await fetchFxsPorts();
+        const retryData = retry && retry.data ? retry.data : (retry || []);
+        setPorts(retryData.map(mapApiPortToRow));
+        setRefreshKey(Date.now());
+      } else {
+        setPorts(data.map(mapApiPortToRow));
+        setRefreshKey(Date.now());
+      }
+    } catch (err) {
+      console.error('Error loading FXS ports:', err);
+      setError(err.message || 'Failed to load ports');
+      // fallback to default initialization data
+      setPorts(initializePortData());
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    loadPorts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Handle page change
   const handlePageChange = (newPage) => {
     setPage(Math.max(1, Math.min(totalPages, newPage)));
   };
 
-  // Handle batch modify button click - navigate to batch modify page
+  // Local UI state for inline modify panels
+  const [showBatchModify, setShowBatchModify] = useState(false);
+  const [showSingleModify, setShowSingleModify] = useState(false);
+  const [selectedPort, setSelectedPort] = useState(null);
+
+  // Handle batch modify button click - show inline batch modify
   const handleBatchModify = () => {
-    navigate(ROUTE_PATHS.PORT_FXS_BATCH_MODIFY);
+    // set default starting/ending ports from fetched ports if available
+    if (ports && ports.length > 0) {
+      setBatchInitialPorts({
+        startingPort: String(ports[0].port),
+        endingPort: String(ports[ports.length - 1].port),
+      });
+    } else {
+      setBatchInitialPorts({ startingPort: '1', endingPort: String(PORT_FXS_TOTAL_PORTS) });
+    }
+    setShowBatchModify(true);
   };
 
   return (
     <div className="bg-gray-50 min-h-[calc(100vh-80px)] flex flex-col items-center box-border" style={{ backgroundColor: '#dde0e4', padding: '8px' }}>
       <div className="w-full max-w-full mx-auto">
-        {/* Blue Bar with Title and Batch Modify Button */}
-        <div style={blueBarStyle}>
-          <button
-            style={batchModifyButtonStyle}
-            onClick={handleBatchModify}
-          >
-            Batch Modify
-          </button>
-          <span>{PORT_FXS_PAGE_TITLE}</span>
-        </div>
+        {/* Blue Bar with Title and Batch Modify Button (hide when a modify panel is open) */}
+        {!showBatchModify && !showSingleModify && (
+          <div style={blueBarStyle}>
+            <button
+              style={batchModifyButtonStyle}
+              onClick={handleBatchModify}
+            >
+              Batch Modify
+            </button>
+            <span>{PORT_FXS_PAGE_TITLE}</span>
+          </div>
+        )}
 
-        {/* Table Container */}
-        <div className="w-full bg-white border-2 border-gray-400 border-t-0 rounded-b-lg" style={{ overflowX: 'auto', overflowY: 'visible' }}>
-          <table className="w-full" style={{ backgroundColor: '#f8fafd', tableLayout: 'auto', borderCollapse: 'collapse', width: '100%', minWidth: '1400px' }}>
-            <thead>
-              <tr>
-                {PORT_FXS_TABLE_COLUMNS.map((col) => (
-                  <th key={col.key} style={thStyle}>
-                    {col.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {pagedPorts.map((port, idx) => (
-                <tr key={port.port}>
-                  <td style={tdStyle}>
-                    <button
-                      onClick={() => {
-                        // Navigate to batch modify page with selected port
-                        const portNumber = String(port.port);
-                        navigate(ROUTE_PATHS.PORT_FXS_BATCH_MODIFY, {
-                          state: { startingPort: portNumber, endingPort: portNumber }
-                        });
-                      }}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                    >
-                      <EditDocumentIcon style={{ fontSize: 16, color: '#0e8fd6' }} />
-                    </button>
-                  </td>
-                  <td style={tdStyle}>{port.port}</td>
-                  <td style={tdStyle}>{port.type}</td>
-                  <td style={tdStyle}>{port.sipAccount}</td>
-                  <td style={tdStyle}>{port.displayName}</td>
-                  <td style={tdStyle}>{port.autoDialNum}</td>
-                  <td style={tdStyle}>{port.dnd}</td>
-                  <td style={tdStyle}>{port.forward}</td>
-                  <td style={tdStyle}>{port.fwdType}</td>
-                  <td style={tdStyle}>{port.fwdNumber}</td>
-                  <td style={tdStyle}>{port.cid}</td>
-                  <td style={tdStyle}>{port.callWaiting}</td>
-                  <td style={tdStyle}>{port.regStatus}</td>
-                  <td style={tdStyle}>{port.echoCanceller}</td>
-                  <td style={tdStyle}>{port.colorRing}</td>
-                  <td style={tdStyle}>{port.colorRingIndex}</td>
-                  <td style={tdStyle}>{port.inputGain}</td>
-                  <td style={tdStyle}>{port.outputGain}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* Table Container or Inline Modify Panels */}
+        {!showBatchModify && !showSingleModify && (
+          <div key={refreshKey} className="w-full bg-white border-2 border-gray-400 border-t-0 rounded-b-lg" style={{ overflowX: 'auto', overflowY: 'visible' }}>
+            {loading ? (
+              <div style={{ padding: 40, textAlign: 'center' }}>Loading ports...</div>
+            ) : error ? (
+              <div style={{ padding: 40, textAlign: 'center', color: 'red' }}>Error: {error}</div>
+            ) : (
+              <table className="w-full" style={{ backgroundColor: '#f8fafd', tableLayout: 'auto', borderCollapse: 'collapse', width: '100%', minWidth: '1400px' }}>
+                <thead>
+                  <tr>
+                    {PORT_FXS_TABLE_COLUMNS.map((col) => (
+                      <th key={col.key} style={thStyle}>
+                        {col.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {pagedPorts.map((port, idx) => (
+                    <tr key={port.port}>
+                      <td style={tdStyle}>
+                        <button
+                          onClick={() => {
+                            setSelectedPort(String(port.port));
+                            setShowSingleModify(true);
+                          }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                        >
+                          <EditDocumentIcon style={{ fontSize: 16, color: '#0e8fd6' }} />
+                        </button>
+                      </td>
+                      <td style={tdStyle}>{port.port}</td>
+                      <td style={tdStyle}>{port.type}</td>
+                      <td style={tdStyle}>{port.sipAccount}</td>
+                      <td style={tdStyle}>{port.displayName}</td>
+                      <td style={tdStyle}>{port.autoDialNum}</td>
+                      <td style={tdStyle}>{port.dnd}</td>
+                      <td style={tdStyle}>{port.forward}</td>
+                      <td style={tdStyle}>{port.fwdType}</td>
+                      <td style={tdStyle}>{port.fwdNumber}</td>
+                      <td style={tdStyle}>{port.cid}</td>
+                      <td style={tdStyle}>{port.callWaiting}</td>
+                      <td style={tdStyle}>{port.regStatus}</td>
+                      <td style={tdStyle}>{port.echoCanceller}</td>
+                      <td style={tdStyle}>{port.colorRing}</td>
+                      <td style={tdStyle}>{port.colorRingIndex}</td>
+                      <td style={tdStyle}>{port.inputGain}</td>
+                      <td style={tdStyle}>{port.outputGain}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {showBatchModify && (
+          <PortFxsBatchModifyPage
+            initialPorts={batchInitialPorts}
+            onSaved={async () => {
+              await loadPorts();
+              setShowBatchModify(false);
+            }}
+            onClose={() => setShowBatchModify(false)}
+          />
+        )}
+
+        {showSingleModify && selectedPort && (
+          <PortFxsModifyPage
+            port={selectedPort}
+            onSaved={async () => {
+              await loadPorts();
+              setShowSingleModify(false);
+              setSelectedPort(null);
+            }}
+            onClose={() => {
+              setShowSingleModify(false);
+              setSelectedPort(null);
+            }}
+          />
+        )}
 
         {/* Pagination */}
         <div style={paginationStyle}>

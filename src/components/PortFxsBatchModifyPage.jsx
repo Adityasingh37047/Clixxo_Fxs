@@ -5,6 +5,7 @@ import {
   PORT_FXS_BATCH_MODIFY_NOTE,
   PORT_FXS_BATCH_MODIFY_TITLE,
 } from '../constants/PortFxsPageConstants';
+import { postBatchModifyFxs } from '../api/apiService';
 import { ROUTE_PATHS } from '../constants/routeConstatns';
 
 // Initialize batch modify form
@@ -33,12 +34,58 @@ const getInitialBatchForm = (initialPorts = null) => {
   return form;
 };
 
-const PortFxsBatchModifyPage = () => {
+const PortFxsBatchModifyPage = ({ initialPorts: propInitialPorts, onClose, onSaved } = {}) => {
   const navigate = useNavigate();
   const location = useLocation();
+ 
+  // Key handlers to mimic original page restrictions
+  const handleRestrictedChars = (e) => {
+    // Disallow a set of special characters for general text fields
+    const forbidden = /[%&~\|\(\);\\"'=\\\u007C]/;
+    if (forbidden.test(e.key)) {
+      e.preventDefault();
+    }
+  };
+
+  const handleDigitsOnly = (e) => {
+    if (
+      !/^[0-9]$/.test(e.key) &&
+      e.key !== 'Backspace' &&
+      e.key !== 'ArrowLeft' &&
+      e.key !== 'ArrowRight' &&
+      e.key !== 'Tab'
+    ) {
+      e.preventDefault();
+    }
+  };
+
+  const handleDigitsHyphen = (e) => {
+    if (
+      !/^[0-9-]$/.test(e.key) &&
+      e.key !== 'Backspace' &&
+      e.key !== 'ArrowLeft' &&
+      e.key !== 'ArrowRight' &&
+      e.key !== 'Tab'
+    ) {
+      e.preventDefault();
+    }
+  };
+
+  const handleAutoDialKey = (e) => {
+    if (
+      !/^[0-9abc#*]$/.test(e.key) &&
+      e.key !== 'Backspace' &&
+      e.key !== 'ArrowLeft' &&
+      e.key !== 'ArrowRight' &&
+      e.key !== 'Tab'
+    ) {
+      e.preventDefault();
+    }
+  };
+
   const [form, setForm] = useState(() => {
-    // Get initial port values from navigation state
-    const initialPorts = location.state || null;
+    // Prefer propInitialPorts when provided, else use navigation state
+    const initialPorts = propInitialPorts || location.state || null;
     return getInitialBatchForm(initialPorts);
   });
 
@@ -55,7 +102,19 @@ const PortFxsBatchModifyPage = () => {
   };
 
   const handleCheckbox = (key) => {
-    setForm(prev => ({ ...prev, [key]: !prev[key] }));
+    setForm(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      // make DND and Call Forward mutually exclusive
+      if (key === 'dnd' && !prev.dnd) {
+        // turning DND on -> turn Call Forward off
+        next.callForward = false;
+      }
+      if (key === 'callForward' && !prev.callForward) {
+        // turning Call Forward on -> turn DND off
+        next.dnd = false;
+      }
+      return next;
+    });
   };
 
   // Check if field should be shown based on conditional logic
@@ -100,7 +159,7 @@ const PortFxsBatchModifyPage = () => {
 
   // Handle form submission
   const handleSave = (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     
     // Validation
     if (parseInt(form.startingPort) > parseInt(form.endingPort)) {
@@ -109,11 +168,9 @@ const PortFxsBatchModifyPage = () => {
     }
 
     if (form.batchAccount) {
-      if (!form.startingSipAccount) {
-        alert('Please enter the starting SIP account!');
-        return;
-      }
-      if (!form.sipAccountBatchStepSize) {
+      // Allow empty starting SIP account (user may intentionally clear it).
+      // Only validate SIP step size when a starting SIP account is provided.
+      if (form.startingSipAccount && !form.sipAccountBatchStepSize) {
         alert('Please enter the batch step size of SIP account!');
         return;
       }
@@ -160,13 +217,69 @@ const PortFxsBatchModifyPage = () => {
       }
     }
 
-    // Save logic here (API call)
-    alert('Batch modify settings saved successfully!');
-    navigate(ROUTE_PATHS.PORT_FXS);
+    // Build payload
+    const payload = {
+      startingPort: parseInt(form.startingPort, 10),
+      endingPort: parseInt(form.endingPort, 10),
+      batchRegisterEnable: !!form.batchRegister,
+      registerPort: form.registerPort,
+      batchAccountEnable: !!form.batchAccount,
+      startingSipAccount: form.startingSipAccount,
+      startingDisplayName: form.startingDisplayName,
+      startingAuthenticationPassword: form.startingAuthPassword,
+      displayNamePreferred: !!form.displayNamePreferred,
+      sipAccountBatchRule: form.sipAccountBatchRule ? String(form.sipAccountBatchRule).toLowerCase() : form.sipAccountBatchRule,
+      sipAccountBatchStepSize: Number(form.sipAccountBatchStepSize) || 0,
+      displayNameBatchRule: form.displayNameBatchRule ? String(form.displayNameBatchRule).toLowerCase() : form.displayNameBatchRule,
+      displayNameBatchStepSize: Number(form.displayNameBatchStepSize) || 0,
+      authenticationPasswordBatchRule: form.authPasswordBatchRule ? String(form.authPasswordBatchRule).toLowerCase() : form.authPasswordBatchRule,
+      authenticationPasswordBatchStepSize: Number(form.authPasswordBatchStepSize) || 0,
+      batchConfigureEnable: !!form.batchConfigure,
+      autoDialNumberEnable: !!form.autoDialNumberEnable,
+      autoDialNumberValue: form.autoDialNumber,
+      waitTimeBeforeAutoDial: Number(form.waitTimeBeforeAutoDial) || 0,
+      inputGainDb: Number(form.inputGain) || 0,
+      outputGainDb: Number(form.outputGain) || 0,
+      cidEnable: !!form.cid,
+      echoCanceller: !!form.echoCanceller,
+      callWaiting: !!form.callWaiting,
+      dndDoNotDisturb: !!form.dnd,
+      callForward: !!form.callForward,
+      forwardType: form.forwardType,
+      forwardNumber: form.forwardNumber,
+      advancedConfiguration: !!form.advancedConfiguration,
+      ringingParameter: form.ringingParameter,
+      feedVoltageParameter: form.feedVoltageParameter,
+      impedanceParameter: form.impedanceParameter,
+    };
+
+    // Call API
+    (async () => {
+      try {
+        console.debug('Sending batch modify payload:', payload);
+        const res = await postBatchModifyFxs(payload);
+        console.debug('Batch modify response:', res);
+        alert('Batch modify settings saved successfully!');
+        if (typeof onSaved === 'function') {
+          await onSaved();
+        } else if (typeof onClose === 'function') {
+          onClose();
+        } else {
+          navigate(ROUTE_PATHS.PORT_FXS);
+        }
+      } catch (err) {
+        console.error('Batch modify API failed:', err);
+        alert(err?.message || 'Failed to save batch modify settings');
+      }
+    })();
   };
 
   const handleCancel = () => {
-    navigate(ROUTE_PATHS.PORT_FXS);
+    if (typeof onClose === 'function') {
+      onClose();
+    } else {
+      navigate(ROUTE_PATHS.PORT_FXS);
+    }
   };
 
   return (
@@ -177,7 +290,7 @@ const PortFxsBatchModifyPage = () => {
       <div className="flex justify-center" style={{ padding: '0 20px' }}>
         <div style={{ width: '62%', maxWidth: '1000px', minWidth: '700px' }}>
           {/* Page Title Bar */}
-          <div className="w-full h-8 bg-gradient-to-b from-[#b3e0ff] via-[#6ec1f7] to-[#3b8fd6] flex items-center justify-center font-semibold text-lg text-gray-700 shadow mb-0">
+          <div className="w-full h-8 bg-linear-to-b from-[#b3e0ff] via-[#6ec1f7] to-[#3b8fd6] flex items-center justify-center font-semibold text-lg text-gray-700 shadow mb-0">
             <span>{PORT_FXS_BATCH_MODIFY_TITLE}</span>
           </div>
 
@@ -202,7 +315,6 @@ const PortFxsBatchModifyPage = () => {
                             prevField.key === 'endingPort' ||
                             prevField.key === 'registerPort' ||
                             prevField.key === 'displayNamePreferred' ||
-                            prevField.key === 'authUsernameBatchStepSize' ||
                             prevField.key === 'waitTimeBeforeAutoDial' ||
                             prevField.key === 'echoCanceller' ||
                             prevField.key === 'impedanceParameter'
@@ -231,6 +343,11 @@ const PortFxsBatchModifyPage = () => {
                                         checked={!!form[field.key]}
                                         onChange={() => handleCheckbox(field.key)}
                                         style={{ marginRight: '4px' }}
+                                        disabled={
+                                          field.key === 'dnd' ? !!form.callForward
+                                          : field.key === 'callForward' ? !!form.dnd
+                                          : false
+                                        }
                                       />
                                       Enable
                                     </td>
@@ -249,6 +366,16 @@ const PortFxsBatchModifyPage = () => {
                                           className="border border-gray-400 rounded-sm px-1 bg-white"
                                           style={{ height: '22px', width: '200px', fontSize: '12px' }}
                                           maxLength={field.maxLength || 31}
+                                          onKeyDown={
+                                            // Attach appropriate key handlers based on validation or key name
+                                            field.validation === 'integer'
+                                              ? handleDigitsOnly
+                                              : field.key === 'inputGain' || field.key === 'outputGain'
+                                              ? handleDigitsHyphen
+                                              : field.key === 'autoDialNumber'
+                                              ? handleAutoDialKey
+                                              : handleRestrictedChars
+                                          }
                                         />
                                       )}
 
